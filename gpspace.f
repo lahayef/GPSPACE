@@ -537,6 +537,9 @@ C BETAINI- INI BETA ANGLE OF ECLPS START(BEI EXCLUDED)
       DATA   BETAINI/136*0.D0/
       LOGICAL*4 TESTMISC
 C
+c.....GP 16/12/2019
+      integer*4 isvos(4),iambsums(4)
+C
       DATA YAWMODEL/0/
 C RTCM SPECIFIC INITIALIZATION
       DATA RTCMCLKAMB/MAXSAT*.FALSE./
@@ -2869,6 +2872,7 @@ C
 C
 C REMOVE LAST CONSTELLATION-SPECIFIC SATELLITE
 C
+C.....GP 08/01/2020 KEEP ONE SV ?
         IF( (IPRN.GE. 1.AND.IPRN.LE.32.AND.NGPS.EQ.1).OR.
      &      (IPRN.GE.33.AND.IPRN.LE.64.AND.NGLN.EQ.1).OR.
      &      (IPRN.GE.65.AND.IPRN.LE.100.AND.NGAL.EQ.1).OR. 
@@ -2884,6 +2888,7 @@ C
            INSVO = 1
            GO TO 100
         END IF
+C.....GP 08/01/2020 KEEP ONE SV ?
 C
 C     FILL EPHEMERIS ARRAY FROM TABLE
 C
@@ -5587,9 +5592,38 @@ c!    WRITE(*,'(20I6)') (IAMB(ISVO(I)),I=1,NSVO)
 c!    WRITE(*,'(20F6.2)') (VCPAMB(ISVO(I)),I=1,NSVO)
 c!    WRITE(*,'(20F6.2)') (SCPAMB(ISVO(I)),I=1,NSVO)
          IAMBSUM=0
+c.....GP 16/12/2019
+      do is=1,4
+       isvos(is)=0
+       iambsums(is)=0
+      end do
          DO I=1,NSVO
-          IF( IAMB(ISVO(I)) .NE. 0 )
-     &     IAMBSUM=IAMBSUM+1
+          if(isvo(i).le.32)then
+           isvos(1)=isvos(1)+1
+          else if(isvo(i).le.64)then
+           isvos(2)=isvos(2)+1
+          else if(isvo(i).le.100)then
+           isvos(3)=isvos(3)+1
+          else if(isvo(i).le.136)then
+           isvos(4)=isvos(4)+1
+          else
+          end if
+c          IF( IAMB(ISVO(I)) .NE. 0 )
+c     &     IAMBSUM=IAMBSUM+1
+          IF( IAMB(ISVO(I)) .NE. 0 )then
+           IAMBSUM=IAMBSUM+1
+           if(isvo(i).le.32)then
+            iambsums(1)=iambsums(1)+1
+           else if(isvo(i).le.64)then
+            iambsums(2)=iambsums(2)+1
+           else if(isvo(i).le.100)then
+            iambsums(3)=iambsums(3)+1
+           else if(isvo(i).le.136)then
+            iambsums(4)=iambsums(4)+1
+           else
+           end if
+          END IF
+c.....GP 16/12/2019
        END DO
 c!        WRITE(*,"(A3,3X,2(I2.2,':'),I2.2,'.',I3.3,3X,3F10.4)") 'AMB',
 c!   &           IHR,IMIN,INT(SEC),INT((SEC-INT(SEC))*1.D3),
@@ -5888,6 +5922,8 @@ C!! Code End ==================================================================
      &          ,HORDION(2)
      &          ,HORDION(1)/C*1.D9, HORDION(3)/C*1.D9, RIFRATE, NAMBFX
      &          ,NSVDWGT
+c.....GP 16/12/2019
+     &          ,(isvos(k),k=1,4),(iambsums(k),k=1,4)
            ELSE
            WRITE(LPOS,2411) DIR((1-IDIR)/2+1),RFNAME, 
      &          STNA, JULD+FMJDDT,
@@ -5908,6 +5944,8 @@ C!! Code End ==================================================================
      &          ,HORDION(2)
      &          ,HORDION(1)/C*1.D9, HORDION(3)/C*1.D9, RIFRATE,NAMBFX
      &          ,NSVDWGT
+c.....GP 16/12/2019
+     &          ,(isvos(k),k=1,4),(iambsums(k),k=1,4)
           END IF
 C
         ELSE
@@ -5938,6 +5976,8 @@ C
      &          ,HORDION(2)
      &          ,HORDION(1)/C*1.D9, HORDION(3)/C*1.D9, RIFRATE,NAMBFX
      &          ,NSVDWGT
+c.....GP 16/12/2019
+     &          ,(isvos(k),k=1,4),(iambsums(k),k=1,4)
            ELSE
            WRITE(LPOS,2411) DIR((1-IDIR)/2+1),RFNAME, 
      &          STNA, JULD+FMJDDT,
@@ -5959,6 +5999,8 @@ C
      &          ,HORDION(2)
      &          ,HORDION(1)/C*1.D9, HORDION(3)/C*1.D9, RIFRATE,NAMBFX
      &          ,NSVDWGT
+c.....GP 16/12/2019
+     &          ,(isvos(k),k=1,4),(iambsums(k),k=1,4)
           END IF
        END IF
       END IF
@@ -6373,7 +6415,9 @@ C
      &            46X,'(nsec)     (nsec/hr)  (hr:mn:sec)             ')
   820 FORMAT( 3(2X,I2,2X),1X,I4,2X,1X,7X,2(I2,':'), F4.1,3X, 2F11.2,5X,
      &            2(I2,':'),F4.1 )
-  900 FORMAT( /,1X,I4,2('/',I2), 1X,2(I2,':'), F6.3 ,1X,'PRNS # ',36I6)
+C.....GP 08/01/2020
+C  900 FORMAT( /,1X,I4,2('/',I2), 1X,2(I2,':'), F6.3 ,1X,'PRNS # ',36I6)
+  900 FORMAT( /,1X,I4,2('/',I2), 1X,2(I2,':'), F6.3 ,1X,'PRNS # ',48I4)
  1000 FORMAT( ' EPHEMERIS TIME  (hr:mn) ',7X,10(1X,I2,':',I2) )
  1135 FORMAT( ' RANGE CORRECTION   (m.) ',7X,10F6.1 )
  1138 FORMAT( ' SV MISMATCH EFFECT (m.) ',7X,10F6.1 )
@@ -6410,7 +6454,9 @@ C
      &       1X,'BEICLK(ns)',1X,'SBEICLK(ns)',
      &       1X,'MAXNL',1X,'MAXWL',1X,'AVGNL(m)',1X,'AVGWL(m)'
      &       ,1X,'VTEC(.1TECU)',1X,'GPS_DP1P2(ns)',1X,'GLN_DP1P2(ns)'
-     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT')
+c     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT')
+     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT'
+     &       ,' NSG NSR NSE NSC NAG NAR NAE NAC')
  2401 FORMAT('DIR',1X,'FRAME',8X,'STN',9X,'DOY',1X,'YEAR-MM-DD',1X,
      &     'HR:MN:SS.SSS',1X,'NSV',1X,'GDOP',4X,'SDC',4X,'SDP',9X,
      &       'DX(m)',9X,'DY(m)',9X,'DZ(m)',9X,'CLK(ns)',3X,'TZD(m)',4X,
@@ -6422,19 +6468,23 @@ C
      &       1X,'BEICLK(ns)',1X,'SBEICLK(ns)',
      &       1X,'MAXNL(m)',1X,'MAXWL(m)',1X,'AVGNL(m)',1X,'AVGWL(m)'
      &       ,1X,'VTEC(.1TECU)',1X,'GPS_DP1P2(ns)',1X,'GLN_DP1P2(ns)'
-     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT')
+c     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT')
+     &       ,1X,'RIFRATE',1X,'NAMBFIX',1X,'NSVDWGT'
+     &       ,' NSG NSR NSE NSC NAG NAR NAE NAC')
  2410 FORMAT(A3,1X,A11,1X,A4,1X,F11.7,1X,I4,'-',I2.2,'-',
      &       I2.2,1X,
      &       I2.2,':',I2.2,':',I2.2,'.',I3.3,1X,I3,1X,F4.1,1X,F6.2,1X,
      &       F6.4,1X,3(F13.3,1X),F15.3,1X,F8.4,1X,4(F8.3,1X),F8.4,1X,
      &       2(A6,1X,I6,1X,F8.5,1X),F13.3,1X,I2,4(1X,f5.1),
-     &       1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1),2I3 )
+c     &       1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1),2I3 )
+     &     1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1),2I3,8I4)
  2411 FORMAT(A3,1X,A11,1X,A4,1X,F11.7,1X,I4,'-',I2.2,'-',
      &       I2.2,1X,
      &       I2.2,':',I2.2,':',I2.2,'.',I3.3,1X,I3,1X,F4.1,1X,F6.2,1X,
      &       F6.4,1X,3(F13.3,1X),F15.3,1X,F8.4,1X,4(F8.3,1X),F8.4,1X,
      &       3(F16.3,1X),I2,4(1X,f5.1),
-     &       1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1) ,2I3)
+c     &       1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1) ,2I3)
+     &     1X,F8.4,1X,3(F15.3,1X,F8.3),4(1X,F10.4),4(1X,F8.1),2I3,8I4)
  2500 FORMAT(I10,F15.3)
  2600 FORMAT('DIR',1X,'DATE',8X,'DOY',9X,'HH:MM:SSS',5X,
      &       'PRN',7X,'AZI',7X,'ELV',7X,'VPR',7X,'VCP',7X,
