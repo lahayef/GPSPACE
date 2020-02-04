@@ -1572,7 +1572,10 @@ C
       IF( IOBTYP.EQ.2 ) THEN
         DO I=1,NSVOL
           IF( PL(IOBTYP*I,IOBTYP*I)*SDCP**2 .LT. 1.D-20 )
-     &      ICSLIP15(ISVOL(I))=1
+c Lahaye : 2020Feb04 : introduce the new DWT cause for ambiguity reset
+     &      ICSLIP15(ISVOL(I))=6
+c    &      ICSLIP15(ISVOL(I))=1
+c Lahaye : 2020Feb04 : introduce the new DWT cause for ambiguity reset
         END DO
       ENDIF
 C
@@ -2124,6 +2127,9 @@ C
         IF (ICSLIP(I) .NE. 0 .AND. IOBTYP .EQ. 2) THEN
           NCSLIP15 = 1
           ICSLIP15(ISVO(I)) = 1
+c Lahaye : 2020Feb04 : introduce the new EST cause for ambiguity reset
+          IF( IFLAG .EQ. 0 ) ICSLIP15(ISVO(I)) = 0
+c Lahaye : 2020Feb04 : introduce the new EST cause for ambiguity reset
           IF( IFLAG .EQ. 5 ) ICSLIP15(ISVO(I)) = 1
           IF( IFLAG .EQ. 6 ) ICSLIP15(ISVO(I)) = 2
           IF( IFLAG .EQ. 7 ) ICSLIP15(ISVO(I)) = 3
@@ -2319,7 +2325,7 @@ C
          IF( CLKAMB(ISVO(I)) ) THEN
           ICSLIP(I) = 1
           NCSLIP15 = 1
-          ICSLIP15(ISVO(I)) = 1
+c         ICSLIP15(ISVO(I)) = 1
           ICSLIP15(ISVO(I)) = 4
           CNTSLIP(ISVO(I),IARC(ISVO(I)),ICSLIP15(ISVO(I)))=
      &        CNTSLIP(ISVO(I),IARC(ISVO(I)),ICSLIP15(ISVO(I)))+1
@@ -5493,19 +5499,22 @@ C DRIFRT - GLN IF RATE DIFF (SUM); SUMIGF - SUM of ABS GLN FCY NO.
           IF( PX(NFPAR+IO,NFPAR+IO).GT..9D6 )
      &     NRCFX(ISVO(IO),IARC(ISVO(IO)))=
      &                               NRCFX(ISVO(IO),IARC(ISVO(IO)))+1
-C RELY ON THE NEW FLTOBS CY SLIP CORRECTIONS/DETECTIONS ONLY
-C BUT ONLY WHEN CY SLIP RECOV IS ON
-          IF(FLTSUM(16,ISVO(IO)).LT.DMXNLSAV.AND.
-     &       FLTSUM(17,ISVO(IO)).LT.DMXWLSAV.AND.
-     &       FLTPAR(5).GT.31.D0) THEN
+c Lahaye : 2020Feb04 : not longer necessary; performed in ADDPX
+cC RELY ON THE NEW FLTOBS CY SLIP CORRECTIONS/DETECTIONS ONLY
+cC BUT ONLY WHEN CY SLIP RECOV IS ON
+c         IF(FLTSUM(16,ISVO(IO)).LT.DMXNLSAV.AND.
+c    &       FLTSUM(17,ISVO(IO)).LT.DMXWLSAV.AND.
+c    &       FLTPAR(5).GT.31.D0) THEN
+c         NEWAMB = 0
+c         ELSE
+cC FORCE THE SAME SATELLITE SLIP RECOV IS OFF!
+c         NEWAMB = 1
+c         DO IL=1,NSVOL
+c         IF ( ISVO(IO) .EQ. ISVOL(IL) ) NEWAMB=0
+c         END DO
+c         ENDIF
           NEWAMB = 0
-          ELSE
-C FORCE THE SAME SATELLITE SLIP RECOV IS OFF!
-          NEWAMB = 1
-          DO IL=1,NSVOL
-          IF ( ISVO(IO) .EQ. ISVOL(IL) ) NEWAMB=0
-          END DO
-          ENDIF
+c Lahaye : 2020Feb04 : not longer necessary; performed in ADDPX
           IF( ICSLIP15(ISVO(IO)) .NE. 0 ) THEN
           NEWAMB=ICSLIP15(ISVO(IO))
           ICSLIP15(ISVO(IO))=0
@@ -6656,11 +6665,20 @@ C
           DO IL=1,NSVL
             IF ( ISV(IS) .EQ. ISVL(IL) ) IPOSPX(NFPAR+IS)=NFPAR+IL
           END DO
+c Lahaye : 2020Feb04 : introduce the new EST cause for ambiguity reset
+c ACCOUNTING FOR GAP IN AMBIGUITY ESTIMATION
+          IF( IPOSPX(NFPAR+IS) .EQ. 0
+     &        .AND. LCSLIP(ISV(IS)) .EQ. 0 ) LCSLIP(ISV(IS)) = 5
+c Lahaye : 2020Feb04 : introduce the new EST cause for ambiguity reset
 C
 C   Open up sigma of old ambiguities when break detected
 C
-          IF ( IS .LE. NSV .AND.
-     &         LCSLIP(ISV(IS)) .NE. 0 ) IPOSPX(NFPAR+IS)=0
+c Lahaye : 2020Feb04 : first condition not necessary
+c         IF ( IS .LE. NSV .AND.
+c    &         LCSLIP(ISV(IS)) .NE. 0 ) IPOSPX(NFPAR+IS)=0
+          IF ( LCSLIP(ISV(IS)) .NE. 0 ) IPOSPX(NFPAR+IS)=0
+c Lahaye : 2020Feb04 : first condition not necessary
+
         END DO
 C
 C       ASSIGN VARIANCES TO SATELLITES WITH AMBIGUITY ESTIMATES
