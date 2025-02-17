@@ -16183,7 +16183,7 @@ C
       ELONG= PLZ(2)*180.D0/PI
       DATE = IYR+JDAY/365.25D0
 C
-      CALL igrf12syn (  0,date,    1,HION,colat,elong,x,y,z,BP)
+      CALL igrf14syn (  0,date,    1,HION,colat,elong,x,y,z,BP)
 C FIELD COMPONENTs (nT) x +ve N, y +ve E & Z +ve DOWN /CHANGE UP !           
       Z=-Z
 C
