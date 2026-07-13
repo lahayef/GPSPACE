@@ -11889,7 +11889,7 @@ C
       CHARACTER*3   ORBTYP
       CHARACTER*4   AGENCY
       INTEGER*4 NERR,IYOBS,IMOBS,IDOBS,IMID,IDOY,IWKOBS,IDWKOBS
-     &         ,ISEC,IC
+     &         ,ISEC,IC,IWKDAY
       CHARACTER*64 HEX
       INTEGER*4 IOS,IPRN,IYEPH,IMEPH,IDEPH,IDUM,IHOUR,IMIN
       INTEGER*4 NPEPEPO,IGPSWK,MJULD,IWKEPH,IDATEO,IDATEP
@@ -12003,6 +12003,15 @@ C
      &           AGENCY
           READ(LUEPH,20100,END=120,ERR=120) IDUM,IGPSWK,SECOW,PEPINT, 
      &                                    MJULD, FJULD
+c	DDG: another place where SECOW is read
+       write(*,*) SECOW
+        IF(SECOW.LT.1.0D-5) THEN
+c         DDG: R03 IGS orbits have a bad time seconds of the week field. 
+c              If zero, try to compute
+           CALL GPSDC (IDOY,IYEPH,IMEPH,IDEPH,IGPSWK,IWKDAY,2)
+           SECOW = (IWKDAY-1)*86400
+        ENDIF
+       write(*,*) SECOW
 C
 C FIGURE MINIMUM NON-ZERO ACCURACY CODE
 C
@@ -12282,6 +12291,7 @@ C
 c!    WRITE(*,*) 'IN FITEPH',NEWPEP
       IF ( IPEP .GE. 2 ) THEN
       IF ( IPEP .GT. 2 ) WRITE(LPR,1010)
+      write(*,*) "DDG:"
       CALL HDSP3 ( LUPEP, NEWPEP, NEWTT, NPEPSV, IPEPSV,
      &                 IGPSWK, SECOW, IEND, IPEPACC, NPEPEPO,
      &                 IMINACC,
@@ -15536,7 +15546,7 @@ C
       INTEGER*4 IMINACC
       REAL*8    SECOW
 C
-      INTEGER*4 IYEAR,IMONTH,IDAY,IHOUR,IMIN,MJULD,IS
+      INTEGER*4 IYEAR,IMONTH,IDAY,IHOUR,IMIN,MJULD,IS,IDOY,IWKDAY
       INTEGER*4 I,J,INT1,INT2,INT3,INT4,INT5,INT6,INT7,INT8
 C USE 200 as MAX NO SVs IN SP3
       INTEGER*4 IDSV(200),IESV(200)
@@ -15562,14 +15572,23 @@ C  READ HEADER INFORMATION
 C  -----------------------
 C
        READ(LUPEP,'(A60)',END=900) RECORD
-c!        write(*,*) record
+c        write(*,*) record
        READ(RECORD,1000,END=900) IDLIN, IYEAR, IMONTH, IDAY, IHOUR, 
      &                IMIN, SEC, NPEPEPO, USEDAT, IFRAME, ORBTYP, AGENCY
+
        READ(LUPEP,'(A60)',END=900) RECORD
-c!        write(*,*) record
+c        write(*,*) record
        READ(RECORD,1100,END=900) IDLIN, IGPSWK, SECOW, PEPINT, MJULD, 
      &                            FJULD
          IPEPINT=IDNINT(PEPINT)
+       write(*,*) SECOW
+       IF(SECOW.LT.1.0D-5) THEN
+c        DDG: R03 IGS orbits have a bad time seconds of the week field. 
+c             If zero, try to compute
+          CALL GPSDC (IDOY,IYEAR,IMONTH,IDAY,IGPSWK,IWKDAY,2)
+          SECOW = (IWKDAY-1)*86400
+       ENDIF
+       write(*,*) SECOW
        READ(LUPEP,1200,END=900) IDLIN, NPEPSV, (G(I),IDSV(I),I=1,17)
 c 2020Jul27: up to 59 (=ceil(999/17)) SVid records in SP3d
 c      DO J=1,40
